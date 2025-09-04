@@ -1,7 +1,7 @@
 /**
  * Profile Screen Component
  */
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
   Image,
   StyleSheet,
+  Animated,
 } from 'react-native';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { AuthService } from '../services/AuthService';
@@ -19,7 +20,54 @@ interface ProfileScreenProps {
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogoutSuccess }) => {
+  // Animation refs
+  const avatarAnim = useRef(new Animated.Value(0)).current;
+  const profileAnim = useRef(new Animated.Value(0)).current;
+  const infoAnim = useRef(new Animated.Value(0)).current;
+  const buttonAnim = useRef(new Animated.Value(0)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Stagger the entrance animations
+    Animated.sequence([
+      Animated.timing(avatarAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(profileAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(infoAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   const handleSignOut = async () => {
+    // Add button press animation
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     try {
       await AuthService.signOut();
       Alert.alert('Success', 'You have been signed out successfully');
@@ -31,7 +79,28 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogoutSucc
 
   return (
     <View style={styles.container}>
-      <View style={styles.profileSection}>
+      <Animated.View
+        style={[
+          styles.profileSection,
+          {
+            opacity: avatarAnim,
+            transform: [
+              {
+                scale: avatarAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1],
+                }),
+              },
+              {
+                translateY: avatarAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [30, 0],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
         {user.photoURL ? (
           <Image source={{ uri: user.photoURL }} style={styles.avatar} />
         ) : (
@@ -41,11 +110,40 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogoutSucc
             </Text>
           </View>
         )}
-        <Text style={styles.userName}>{user.displayName || 'User'}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
-      </View>
+        <Animated.View
+          style={{
+            opacity: profileAnim,
+            transform: [
+              {
+                translateY: profileAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              },
+            ],
+          }}
+        >
+          <Text style={styles.userName}>{user.displayName || 'User'}</Text>
+          <Text style={styles.userEmail}>{user.email}</Text>
+        </Animated.View>
+      </Animated.View>
 
-      <View style={styles.infoSection}>
+      <Animated.View
+        style={[
+          styles.infoSection,
+          {
+            opacity: infoAnim,
+            transform: [
+              {
+                translateY: infoAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [30, 0],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
         <Text style={styles.infoTitle}>Account Information</Text>
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>UID:</Text>
@@ -75,11 +173,26 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogoutSucc
             }
           </Text>
         </View>
-      </View>
+      </Animated.View>
 
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-        <Text style={styles.signOutButtonText}>Sign Out</Text>
-      </TouchableOpacity>
+      <Animated.View
+        style={{
+          opacity: buttonAnim,
+          transform: [
+            {
+              translateY: buttonAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [30, 0],
+              }),
+            },
+            { scale: buttonScale },
+          ],
+        }}
+      >
+        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+          <Text style={styles.signOutButtonText}>Sign Out</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 };

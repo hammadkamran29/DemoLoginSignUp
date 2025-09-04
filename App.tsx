@@ -3,13 +3,14 @@
  * @format
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   StatusBar,
   StyleSheet,
   Text,
   View,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import {
   SafeAreaProvider,
@@ -33,6 +34,10 @@ function AppContent() {
   const safeAreaInsets = useSafeAreaInsets();
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
 
   useEffect(() => {
     const subscriber = AuthService.onAuthStateChanged((user) => {
@@ -41,6 +46,29 @@ function AppContent() {
     });
     return subscriber; // unsubscribe on unmount
   }, []);
+
+  // Animate screen changes
+  useEffect(() => {
+    if (!loading) {
+      // Reset animation values
+      fadeAnim.setValue(0);
+      slideAnim.setValue(50);
+      
+      // Start animations
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [user, loading, fadeAnim, slideAnim]);
 
   const handleLoginSuccess = (user: FirebaseAuthTypes.User) => {
     setUser(user);
@@ -66,11 +94,21 @@ function AppContent() {
         <Text style={styles.subtitle}>Firebase Auth Demo</Text>
       </View>
 
-      {user ? (
-        <ProfileScreen user={user} onLogoutSuccess={handleLogoutSuccess} />
-      ) : (
-        <LoginScreen onLoginSuccess={handleLoginSuccess} />
-      )}
+      <Animated.View
+        style={[
+          styles.screenContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        {user ? (
+          <ProfileScreen user={user} onLogoutSuccess={handleLogoutSuccess} />
+        ) : (
+          <LoginScreen onLoginSuccess={handleLoginSuccess} />
+        )}
+      </Animated.View>
     </View>
   );
 }
@@ -109,6 +147,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#5f6368',
+  },
+  screenContainer: {
+    flex: 1,
   },
 });
 

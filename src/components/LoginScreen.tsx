@@ -1,7 +1,7 @@
 /**
  * Login Screen Component
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
+  Animated,
 } from 'react-native';
 import { AuthService } from '../services/AuthService';
 
@@ -18,8 +19,43 @@ interface LoginScreenProps {
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [isSigningIn, setIsSigningIn] = useState(false);
+  
+  // Animation refs
+  const welcomeAnim = useRef(new Animated.Value(0)).current;
+  const buttonAnim = useRef(new Animated.Value(0)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Stagger the entrance animations
+    Animated.sequence([
+      Animated.timing(welcomeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const handleGoogleSignIn = async () => {
+    // Add button press animation
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     try {
       setIsSigningIn(true);
       const user = await AuthService.signInWithGoogle();
@@ -34,33 +70,71 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.welcomeSection}>
+      <Animated.View
+        style={[
+          styles.welcomeSection,
+          {
+            opacity: welcomeAnim,
+            transform: [
+              {
+                translateY: welcomeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [30, 0],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
         <Text style={styles.welcomeText}>Welcome!</Text>
         <Text style={styles.welcomeSubtext}>
           Sign in with your Google account to continue
         </Text>
-      </View>
+      </Animated.View>
 
-      <TouchableOpacity
-        style={[styles.googleButton, isSigningIn && styles.buttonDisabled]}
-        onPress={handleGoogleSignIn}
-        disabled={isSigningIn}
+      <Animated.View
+        style={[
+          {
+            opacity: buttonAnim,
+            transform: [
+              {
+                translateY: buttonAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [30, 0],
+                }),
+              },
+              { scale: buttonScale },
+            ],
+          },
+        ]}
       >
-        {isSigningIn ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <>
-            <View style={styles.googleIcon}>
-              <Text style={styles.googleIconText}>G</Text>
-            </View>
-            <Text style={styles.googleButtonText}>Sign in with Google</Text>
-          </>
-        )}
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.googleButton, isSigningIn && styles.buttonDisabled]}
+          onPress={handleGoogleSignIn}
+          disabled={isSigningIn}
+        >
+          {isSigningIn ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <View style={styles.googleIcon}>
+                <Text style={styles.googleIconText}>G</Text>
+              </View>
+              <Text style={styles.googleButtonText}>Sign in with Google</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </Animated.View>
 
-      <Text style={styles.disclaimer}>
-        By signing in, you agree to our Terms of Service and Privacy Policy
-      </Text>
+      <Animated.View
+        style={{
+          opacity: buttonAnim,
+        }}
+      >
+        <Text style={styles.disclaimer}>
+          By signing in, you agree to our Terms of Service and Privacy Policy
+        </Text>
+      </Animated.View>
     </View>
   );
 };
