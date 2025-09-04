@@ -1,6 +1,8 @@
 import UIKit
 import Firebase
 import GoogleSignIn
+import React        // ← this is required for RCTBridge, RCTRootView, etc.
+
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate, RCTBridgeDelegate {
